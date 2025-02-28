@@ -1,8 +1,8 @@
-# Default ignored files
-/shelf/
-/workspace.xml
+# 默认忽略的文件
+/../../P4_KeyByAndReduce./.idea/shelf/
+/../../P4_KeyByAndReduce./.idea/workspace.xml
 # 基于编辑器的 HTTP 客户端请求
-/httpRequests/
+/../../P4_KeyByAndReduce./.idea/httpRequests/
 # Datasource local storage ignored files
-/dataSources/
-/dataSources.local.xml
+/../../P4_KeyByAndReduce./.idea/dataSources/
+/../../P4_KeyByAndReduce./.idea/dataSources.local.xml
