@@ -1,4 +1,6 @@
 
+import org.apache.kafka.common.serialization.StringDeserializer;
+
 import java.util.Properties;
 
 /**

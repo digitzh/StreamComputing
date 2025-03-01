@@ -1,3 +1,5 @@
+package org.MDGA.P4_KeyByAndReduce.src;
+
 import stream.DataStream;
 import stream.source.KafkaSource;
 import stream.sink.KafkaSink;
