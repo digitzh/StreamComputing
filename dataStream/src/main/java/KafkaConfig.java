@@ -1,6 +1,5 @@
 
 import org.apache.kafka.common.serialization.StringDeserializer;
-
 import java.util.Properties;
 
 /**
@@ -9,7 +8,9 @@ import java.util.Properties;
 public class KafkaConfig {
     public static Properties getConsumerConfig() {
         Properties props = new Properties();
-        props.put("bootstrap.servers", "localhost:9092");
+        // 修改为你的 Kafka 服务器地址
+        String IP_address = "192.168.233.129:9092";
+        props.put("bootstrap.servers", IP_address);
         props.put("group.id", "streaming-job");
         props.put("key.deserializer", StringDeserializer.class.getName());
         props.put("value.deserializer", StringDeserializer.class.getName());
