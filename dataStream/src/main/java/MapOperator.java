@@ -8,13 +8,16 @@ public class MapOperator<T, R> implements Runnable {
     private final DataStream<R> outputStream;
     private final Function<T, R> mapper;
     private volatile boolean isRunning = true;
+    private final int parallelism;  // 新增并行度参数
 
     public MapOperator(DataStream<T> inputStream,
                        DataStream<R> outputStream,
-                       Function<T, R> mapper) {
+                       Function<T, R> mapper,
+                       int parallelism) {  // 修改构造函数
         this.inputStream = inputStream;
         this.outputStream = outputStream;
         this.mapper = mapper;
+        this.parallelism = parallelism;
     }
 
     @Override
@@ -32,5 +35,9 @@ public class MapOperator<T, R> implements Runnable {
 
     public void stop() {
         isRunning = false;
+    }
+
+    public int getParallelism() {
+        return parallelism;
     }
 }
