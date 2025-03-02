@@ -33,6 +33,7 @@ public class ReduceOperator<K, T> implements Runnable {
                             T current = accumulator.getOrDefault(key, null);
                             T reduced = (current == null) ? value : reducer.apply(current, value);
                             accumulator.put(key, reduced);
+                            System.out.println("[Reduce]Reduced value for key " + key + ": " + reduced);
                             outputStream.emit(reduced);
                         }
                     } catch (InterruptedException e) {

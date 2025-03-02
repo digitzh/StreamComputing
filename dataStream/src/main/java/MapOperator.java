@@ -26,6 +26,7 @@ public class MapOperator<T, R> implements Runnable {
             while (isRunning) {
                 T input = inputStream.poll();
                 R transformed = mapper.apply(input);
+                System.out.println("[Map]Mapped " + input + " to " + transformed);
                 outputStream.emit(transformed);
             }
         } catch (InterruptedException e) {

@@ -21,6 +21,7 @@ public class Sink implements Runnable {
         try (BufferedWriter writer = new BufferedWriter(new FileWriter(outputPath, true))) {
             while (isRunning) {
                 String record = dataStream.poll();
+                System.out.println("[Sink]Writing record: " + record);
                 writer.write(record);
                 writer.newLine();
                 writer.flush(); // 立即写入磁盘

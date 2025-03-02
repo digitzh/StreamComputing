@@ -25,6 +25,7 @@ public class Source implements Runnable {
             while (isRunning) {
                 ConsumerRecords<String, String> records = consumer.poll(Duration.ofMillis(100));
                 for (ConsumerRecord<String, String> record : records) {
+                    System.out.println("[Source]Received record: " + record.value());
                     dataStream.emit(record.value());
                 }
             }

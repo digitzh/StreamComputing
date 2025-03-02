@@ -25,6 +25,7 @@ public class KeyByOperator<T, K> implements Runnable {
             while (isRunning) {
                 T record = inputStream.poll();
                 K key = keySelector.apply(record);
+                System.out.println("[KeyBy]Received record: " + record + ", key: " + key);
                 outputStreams.emit(key, record);
             }
         } catch (InterruptedException e) {
