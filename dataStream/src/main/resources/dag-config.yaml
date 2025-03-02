@@ -1,0 +1,31 @@
+
+job:
+  name: StreamComputing
+  sources:
+    - id: source
+      type: kafka
+      topic: word-input
+      bootstrap-servers: "192.168.233.129:9092"
+      parallelism: 2
+      next: map-lowercase
+  operators:
+    - id: map-lowercase
+      type: map
+      function: "toLowerCase"
+      parallelism: 4
+      next: keyby-word
+    - id: keyby
+      type: keyby
+      key-selector: "word"
+      parallelism: 3
+      next: reduce-sum
+    - id: reduce
+      type: reduce
+      function: "sum"
+      parallelism: 3
+      next: file-sink
+  sinks:
+    - id: sink
+      type: file
+      path: "/output/wordcount"
+      parallelism: 1
