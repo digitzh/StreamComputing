@@ -1,13 +1,12 @@
-// By Olina1Ye
-
-/*
-public class parallelism {
+public class SetParallelism {
     // 并发度控制核心基类
     public abstract class StreamOperator<T> {
         private int parallelism = 1;
         private StreamOperator<?> upstream; // 上游引用
         protected List<Worker<T>> workers = new ArrayList<>();
         private final KeyedDataRouter router = new KeyedDataRouter();
+
+        private List<Thread> workerThreads = new ArrayList<>();//线程管理
 
         public void setUpstream(StreamOperator<?> upstream) {
             this.upstream = upstream;
@@ -33,9 +32,15 @@ public class parallelism {
 
         // 动态调整Worker
         private void rebalanceWorkers() {
+            workerThreads.forEach(Thread::interrupt);
+            workerThreads.clear();
             workers.clear();
             for (int i = 0; i < parallelism; i++) {
-                workers.add(createWorker(i));
+                Worker<T> worker = createWorker(i);
+                workers.add(worker);
+                Thread workerThread = new Thread(worker);
+                workerThreads.add(workerThread);
+                workerThread.start();
             }
             router.updateWorkers(parallelism); // 更新路由表
         }
@@ -43,10 +48,37 @@ public class parallelism {
         // 数据分发逻辑
         protected void dispatchRecord(StreamRecord<T> record) {
             int workerIndex = router.route(record.getKey(), parallelism);
-            workers.get(workerIndex).process(record);
+            workers.get(workerIndex).addRecord(record);
         }
+        // 修改Worker接口实现队列处理
+        public abstract class Worker<T> implements Runnable {
+            protected final BlockingQueue<StreamRecord<T>> queue = new LinkedBlockingQueue<>();
+            protected final int workerId;
 
-        protected abstract Worker<T> createWorker(int workerId);
+            public Worker(int workerId) {
+                this.workerId = workerId;
+            }
+
+            public void addRecord(StreamRecord<T> record) {
+                queue.offer(record);
+            }
+
+            @Override
+            public void run() {
+                while (!Thread.currentThread().isInterrupted()) {
+                    try {
+                        StreamRecord<T> record = queue.poll(100, TimeUnit.MILLISECONDS);
+                        if (record != null) {
+                            processRecord(record);
+                        }
+                    } catch (InterruptedException e) {
+                        Thread.currentThread().interrupt();
+                    }
+                }
+            }
+
+            protected abstract void processRecord(StreamRecord<T> record);
+        }
     }
 
     // 并发度路由核心
@@ -117,4 +149,3 @@ public class parallelism {
         }
     }
 }
-*/
