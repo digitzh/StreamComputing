@@ -41,8 +41,8 @@ public class DagParser {
             node.setParallelism(operator.getParallelism());
             node.setNextNodes(Collections.singletonList(operator.getNext()));
             node.setConfig(Map.of(
-                    "function", operator.getFunction(),
-                    "key-selector", operator.getKeySelector()
+                    "function", operator.getFunction() != null ? operator.getFunction() : "",
+                    "key-selector", operator.getKeySelector() != null ? operator.getKeySelector() : ""
             ));
             dag.addNode(node);
         }
