@@ -137,15 +137,15 @@ public class SetParallelism {
 
             // 构建流水线并设置并发度
             DataStream<String> stream = new DataStream<>(source)
-                    .withParallelism(2)  // Source并发度
+                    .withParallelism(1)  // Source并发度
                     .applyOperator(map)
-                    .withParallelism(4)  // Map并发度
+                    .withParallelism(1)  // Map并发度
                     .applyOperator(keyBy)
-                    .withParallelism(3)  // KeyBy并发度
+                    .withParallelism(1)  // KeyBy并发度
                     .applyOperator(reduce)
-                    .withParallelism(3)  // Reduce必须与KeyBy相同
+                    .withParallelism(1)  // Reduce必须与KeyBy相同
                     .applyOperator(sink)
-                    .withParallelism(2); // Sink并发度
+                    .withParallelism(1); // Sink并发度
         }
     }
 }
