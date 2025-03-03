@@ -1,5 +1,6 @@
-package org.MDGA.P7_Setparallelism;
+// By Olina1Ye
 
+/*
 public class parallelism {
     // 并发度控制核心基类
     public abstract class StreamOperator<T> {
@@ -115,5 +116,5 @@ public class parallelism {
                     .withParallelism(2); // Sink并发度
         }
     }
-
 }
+*/

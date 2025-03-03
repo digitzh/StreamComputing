@@ -25,7 +25,7 @@ public static void main(String[] args) throws Exception {
   
     KafkaSource<String> kafkaSource = KafkaSource.<String>builder()  
             .setBootstrapServers("node1:9092,node2:9092,node3:9092")
-            .setGroupId("org.example")
+            .setGroupId("org.MDGA")
             .setTopics("topic_1") 
             .setValueOnlyDeserializer(new SimpleStringSchema()) 
             .setStartingOffsets(OffsetsInitializer.earliest())
