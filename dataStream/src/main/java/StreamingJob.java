@@ -1,114 +1,79 @@
-// StreamingJob.java
-
-import java.util.ArrayList;
-import java.util.List;
-import java.util.concurrent.ConcurrentHashMap;
-
 public class StreamingJob {
     public static void main(String[] args) throws InterruptedException {
         System.out.println("工作目录: " + System.getProperty("user.dir"));
-        // 初始化数据流
+        // 原始数据流（String），来自 Kafka 或 DataGenerator
         DataStream<String> sourceStream = new DataStream<>();
-        DataStream<String> mappedStream = new DataStream<>();
 
-        // 初始化算子
-        // 1. source算子（从Kafka读取）
+        // 用于解析后的 WordCountEvent 流
+        DataStream<WordCountEvent> parsedStream = new DataStream<>();
+        // 窗口聚合结果流（String 格式：window_trigger_time,word,total_count）
+        DataStream<String> windowedStream = new DataStream<>();
+
+        // 1. source算子（从Kafka读取或使用 DataGenerator 模拟输入）
         Source source = new Source(sourceStream, "input-topic");
 
-        // 2. map算子（示例：将输入转换为大写）
-        MapOperator<String, String> map = new MapOperator<>(
+        // 2. Map算子：解析输入并转换为 WordCountEvent
+        MapOperator<String, WordCountEvent> parseOperator = new MapOperator<>(
                 sourceStream,
-                mappedStream,
-                String::toUpperCase, // 示例处理逻辑：转大写
-                1  // 设置并行度
-        );
-
-        // 3. keyBy算子（示例：按第一个逗号分隔的字段分组）
-        KeyByOperator<String, String> keyBy = new KeyByOperator<>(
-                mappedStream,
-                s -> s.split(",")[0],  // 假设输入格式为 "key,value"
-                1  // 设置并行度
-        );
-        Thread keyByThread = new Thread(keyBy);
-        keyByThread.start();
-
-        // 模拟Kafka生产者
-        // DataGenerator
-        DataGenerator<String> generator = new DataGenerator<>(
-                sourceStream,
-                () -> {
-                    String[] keys = {"u1", "u2", "u3", "u4", "u5"};
-                    return keys[(int)(Math.random() * keys.length)] + "," + System.currentTimeMillis();
+                parsedStream,
+                s -> {
+                    // 输入格式："word,count"，例如 "APPLE,1"
+                    String[] parts = s.split(",");
+                    String word = parts[0].toLowerCase();  // 大小写不敏感
+                    int count = Integer.parseInt(parts[1]);
+                    return new WordCountEvent(word, count, System.currentTimeMillis());
                 },
-                500 // 每500ms生成一条数据
-        );
-        new Thread(generator).start();
-
-        KeyedDataStream<String, String> keyedStreams = keyBy.getKeyedStreams();
-
-        // 3. reduce算子（示例：将分组后的数据进行聚合）
-        DataStream<String> reducedStream = new DataStream<>();
-        ReduceOperator<String, String> reduce = new ReduceOperator<>(
-                keyedStreams,
-                reducedStream,
-                (acc, current) -> acc + "|" + current  // 示例reduce逻辑：字符串拼接
+                1
         );
 
-        // 4. Sink算子（示例：将结果写入文件）
-        Sink sink = new Sink(reducedStream, "output.txt");
+        // 3. Window算子：5分钟滚动窗口聚合
+        // 5分钟 = 5 * 60 * 1000 毫秒
+        WindowOperator windowOperator = new WindowOperator(parsedStream, windowedStream, 5 * 60 * 1000);
 
-        // 启动线程
-        // 1. source
+        // 4. Sink算子：将聚合结果写入文件
+        Sink sink = new Sink(windowedStream, "output.txt");
+
+        // 启动各个算子线程
         Thread sourceThread = new Thread(source);
         sourceThread.start();
-        // 2. map
-        //     单线程
-//        Thread mapThread = new Thread(map);
-//        mapThread.start();
-        //     多线程
-        List<Thread> mapThreads = new ArrayList<>();
-        for (int i = 0; i < map.getParallelism(); i++) {
-            Thread t = new Thread(map);
-            mapThreads.add(t);
-            t.start();
-        }
-        // 3. reduce
-        Thread reduceThread = new Thread(reduce);
-        reduceThread.start();
-        // 4. sink
+
+        Thread parseThread = new Thread(parseOperator);
+        parseThread.start();
+
+        Thread windowThread = new Thread(windowOperator);
+        windowThread.start();
+
         Thread sinkThread = new Thread(sink);
         sinkThread.start();
 
-        // 为每个key创建处理流水线
-        ConcurrentHashMap<String, Sink> sinks = new ConcurrentHashMap<>();
-        ConcurrentHashMap<String, Thread> processorThreads = new ConcurrentHashMap<>();
+        // 模拟数据生成（如果不用 Kafka，可用 DataGenerator 模拟数据）
+        DataGenerator<String> generator = new DataGenerator<>(
+                sourceStream,
+                () -> {
+                    // 示例随机生成 "APPLE,1"、"pie,1"、"apple,1" 等数据
+                    String[] words = {"APPLE", "pie", "apple"};
+                    // 为便于测试，可以固定生成顺序或随机生成
+                    int index = (int) (Math.random() * words.length);
+                    return words[index] + ",1";
+                },
+                1000  // 每秒生成一条数据
+        );
+        Thread generatorThread = new Thread(generator);
+        generatorThread.start();
 
-        // 运行 60 秒后停止
-        Thread.sleep(60_000);
-        // 1. source
+        // 运行一段时间后停止
+        Thread.sleep(60_000); // 运行 60 秒后停止
         source.stop();
-        // 2. map
-        map.stop();
-        // 3. reduce
-        reduce.stop();
-        // 4. sink
-        sinks.values().forEach(Sink::stop);
-        processorThreads.values().forEach(thread -> {
-            try {
-                thread.join();
-            } catch (InterruptedException e) {
-                Thread.currentThread().interrupt();
-            }
-        });
+        parseOperator.stop();
+        windowOperator.stop();
         sink.stop();
+        generator.stop();
 
         // 等待线程结束
         sourceThread.join();
-//        mapThread.join(); // 单线程
-        for (Thread t : mapThreads) {
-            t.join();
-        }
-        reduceThread.join();
+        parseThread.join();
+        windowThread.join();
         sinkThread.join();
+        generatorThread.join();
     }
 }
