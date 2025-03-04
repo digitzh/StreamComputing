@@ -6,26 +6,26 @@ job:
       type: kafka
       topic: word-input
       bootstrap-servers: "192.168.233.129:9092"
-      parallelism: 2
-      next: map-lowercase
+      parallelism: 1
+      next: map
   operators:
-    - id: map-lowercase
+    - id: map
       type: map
       function: "toLowerCase"
-      parallelism: 4
-      next: keyby-word
+      parallelism: 1
+      next: keyby
     - id: keyby
       type: keyby
       key-selector: "word"
-      parallelism: 3
-      next: reduce-sum
+      parallelism: 1
+      next: reduce
     - id: reduce
       type: reduce
       function: "sum"
-      parallelism: 3
-      next: file-sink
+      parallelism: 1
+      next: sink
   sinks:
     - id: sink
       type: file
-      path: "/output/wordcount"
+      path: "output.txt"
       parallelism: 1

@@ -8,6 +8,7 @@ import java.io.File;
 import java.io.IOException;
 import java.util.Collections;
 import java.util.Map;
+import java.util.HashMap;
 
 public class DagParser {
     public static Dag parse(String configPath) throws IOException {
@@ -26,10 +27,17 @@ public class DagParser {
             node.setType("source");
             node.setParallelism(source.getParallelism());
             node.setNextNodes(Collections.singletonList(source.getNext()));
-            node.setConfig(Map.of(
-                    "topic", source.getTopic(),
-                    "bootstrap-servers", source.getBootstrapServers()
-            ));
+            
+            // 创建安全的配置映射
+            Map<String, String> config = new HashMap<>();
+            if (source.getTopic() != null) {
+                config.put("topic", source.getTopic());
+            }
+            if (source.getBootstrapServers() != null) {
+                config.put("bootstrap-servers", source.getBootstrapServers());
+            }
+            node.setConfig(config);
+            
             dag.addNode(node);
         }
 
@@ -40,10 +48,17 @@ public class DagParser {
             node.setType(operator.getType());
             node.setParallelism(operator.getParallelism());
             node.setNextNodes(Collections.singletonList(operator.getNext()));
-            node.setConfig(Map.of(
-                    "function", operator.getFunction() != null ? operator.getFunction() : "",
-                    "key-selector", operator.getKeySelector() != null ? operator.getKeySelector() : ""
-            ));
+            
+            // 创建安全的配置映射，处理可能的空值
+            Map<String, String> config = new HashMap<>();
+            if (operator.getFunction() != null) {
+                config.put("function", operator.getFunction());
+            }
+            if (operator.getKeySelector() != null) {
+                config.put("key-selector", operator.getKeySelector());
+            }
+            node.setConfig(config);
+            
             dag.addNode(node);
         }
 
@@ -53,7 +68,14 @@ public class DagParser {
             node.setId(sink.getId());
             node.setType("sink");
             node.setParallelism(sink.getParallelism());
-            node.setConfig(Map.of("path", sink.getPath()));
+            
+            // 创建安全的配置映射
+            Map<String, String> config = new HashMap<>();
+            if (sink.getPath() != null) {
+                config.put("path", sink.getPath());
+            }
+            node.setConfig(config);
+            
             dag.addNode(node);
         }
 
