@@ -3,6 +3,7 @@ import org.apache.kafka.clients.producer.ProducerRecord;
 import org.apache.kafka.clients.producer.ProducerConfig;
 import org.apache.kafka.common.serialization.StringSerializer;
 import java.util.Properties;
+import java.util.concurrent.TimeUnit; // 添加TimeUnit导入
 
 /**
  * 将数据写入Kafka的Sink算子
@@ -30,7 +31,7 @@ public class KafkaSink implements Runnable {
     public void run() {
         try {
             while (isRunning) {
-                String record = dataStream.poll();
+                String record = dataStream.poll(100, TimeUnit.MILLISECONDS); // 添加超时时间
                 if (record != null) {
                     producer.send(new ProducerRecord<>(topic, record));
                     System.out.println("[KafkaSink] Sent record: " + record);

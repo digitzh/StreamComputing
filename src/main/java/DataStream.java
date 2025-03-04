@@ -8,6 +8,15 @@ import java.util.concurrent.TimeUnit;
  */
 public class DataStream<T> {
     private final BlockingQueue<T> buffer = new LinkedBlockingQueue<>();
+    private final SetParallelism.StreamOperator<T> operator;
+
+    public DataStream() {
+        this.operator = null;
+    }
+
+    public DataStream(SetParallelism.StreamOperator<T> operator) {
+        this.operator = operator;
+    }
 
     // 向流中发送数据
     public void emit(T element) {

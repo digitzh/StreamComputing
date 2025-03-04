@@ -1,3 +1,11 @@
+import java.util.List;
+import java.util.ArrayList;
+import java.util.Map;
+import java.util.TreeMap;
+import java.util.concurrent.BlockingQueue;
+import java.util.concurrent.LinkedBlockingQueue;
+import java.util.concurrent.TimeUnit;
+
 public class SetParallelism {
     // 并发度控制核心基类
     public abstract class StreamOperator<T> {
@@ -5,8 +13,13 @@ public class SetParallelism {
         private StreamOperator<?> upstream; // 上游引用
         protected List<Worker<T>> workers = new ArrayList<>();
         private final KeyedDataRouter router = new KeyedDataRouter();
+        private List<Thread> workerThreads = new ArrayList<>();
 
-        private List<Thread> workerThreads = new ArrayList<>();//线程管理
+        public int getParallelism() {
+            return parallelism;
+        }
+
+        protected abstract Worker<T> createWorker(int workerId);
 
         public void setUpstream(StreamOperator<?> upstream) {
             this.upstream = upstream;
@@ -17,8 +30,9 @@ public class SetParallelism {
         }
         // 设置并发度入口
         public void setParallelism(int parallelism) {
-            if (this instanceof ReduceOperator && getUpstream() instanceof KeyByOperator) {
-                if (parallelism != getUpstream().getParallelism()) {
+            if (this.getClass().equals(ReduceOperator.class) && getUpstream() != null && getUpstream().getClass().equals(KeyByOperator.class)) {
+                StreamOperator<?> upstream = getUpstream();
+                if (parallelism != upstream.getParallelism()) {
                     throw new IllegalArgumentException("Reduce算子并发度必须与KeyBy算子保持一致");
                 }
             }
@@ -126,26 +140,14 @@ public class SetParallelism {
         }
     }
 
-    public class JobExample {
+    public static class JobExample {
         public static void main(String[] args) {
-            // 创建算子
-            StreamOperator<String> source = new KafkaSourceOperator<>("input-topic", new StringDeserialization());
-            StreamOperator<String> map = new MapOperator<>(String::toUpperCase);
-            StreamOperator<String> keyBy = new KeyByOperator<>(s -> s.split(":")[0]);
-            StreamOperator<String> reduce = new ReduceOperator<>((a, b) -> a + "," + b);
-            StreamOperator<Void> sink = new FileSinkOperator<>("/output", new TextFileWriterFactory());
-
-            // 构建流水线并设置并发度
-            DataStream<String> stream = new DataStream<>(source)
-                    .withParallelism(1)  // Source并发度
-                    .applyOperator(map)
-                    .withParallelism(1)  // Map并发度
-                    .applyOperator(keyBy)
-                    .withParallelism(1)  // KeyBy并发度
-                    .applyOperator(reduce)
-                    .withParallelism(1)  // Reduce必须与KeyBy相同
-                    .applyOperator(sink)
-                    .withParallelism(1); // Sink并发度
+            // 示例代码，需要实现具体的算子类
+            // StreamOperator<String> source = new KafkaSourceOperator<>("input-topic", new StringDeserialization());
+            // StreamOperator<String> map = new MapOperator<>(String::toUpperCase);
+            // StreamOperator<String> keyBy = new KeyByOperator<>(s -> s.split(":")[0]);
+            // StreamOperator<String> reduce = new ReduceOperator<>((a, b) -> a + "," + b);
+            // StreamOperator<Void> sink = new FileSinkOperator<>("/output", new TextFileWriterFactory());
         }
     }
 }
