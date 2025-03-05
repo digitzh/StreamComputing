@@ -11,6 +11,13 @@ import java.util.Collections;
 import java.util.Properties;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.TimeUnit;
+import java.util.Map;
+import java.util.Set;
+import java.util.Arrays;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.atomic.AtomicLong;
+import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.Executors;
 
 public class ShuffleOperator<T> {
     private final SetParallelism setParallelism = new SetParallelism();
@@ -22,6 +29,9 @@ public class ShuffleOperator<T> {
     private final AtomicBoolean running;
     private final DataStream<T> outputStream;
     private final DataStream<T> inputStream;
+    private final Map<Integer, AtomicLong> partitionCounts = new ConcurrentHashMap<>();
+    private final Map<String, Set<Integer>> keyPartitionMapping = new ConcurrentHashMap<>();
+    private final ScheduledExecutorService statsExecutor = Executors.newSingleThreadScheduledExecutor();
 
     public ShuffleOperator(DataStream<T> inputStream, DataStream<T> outputStream,
                           String inputTopic, String outputTopic) {
@@ -38,7 +48,7 @@ public class ShuffleOperator<T> {
         this.running = new AtomicBoolean(true);
 
         // 配置生产者
-        Properties producerProps = KafkaConfig.getConsumerConfig();
+        Properties producerProps = KafkaConfig.getProducerConfig();
         producerProps.put("key.serializer", StringSerializer.class.getName());
         producerProps.put("value.serializer", StringSerializer.class.getName());
         producerProps.put("acks", "all");
@@ -50,6 +60,35 @@ public class ShuffleOperator<T> {
         Properties consumerProps = KafkaConfig.getConsumerConfig();
         consumerProps.put("group.id", "shuffle-group");
         this.consumer = new KafkaConsumer<>(consumerProps);
+    }
+
+    private void updateStats(String key, int partition) {
+        partitionCounts.computeIfAbsent(partition, k -> new AtomicLong()).incrementAndGet();
+        keyPartitionMapping.computeIfAbsent(key, k -> ConcurrentHashMap.newKeySet()).add(partition);
+    }
+
+    private void printStats() {
+        System.out.println("\n=== Shuffle Statistics ===");
+        
+        // 打印分区负载统计
+        System.out.println("\nPartition Distribution:");
+        long[] counts = partitionCounts.values().stream().mapToLong(AtomicLong::get).toArray();
+        double mean = Arrays.stream(counts).average().orElse(0.0);
+        double variance = Arrays.stream(counts)
+                .mapToDouble(count -> Math.pow(count - mean, 2))
+                .average().orElse(0.0);
+        double stdDev = Math.sqrt(variance);
+        double cv = mean != 0 ? stdDev / mean : 0;
+
+        partitionCounts.forEach((partition, count) ->
+            System.out.printf("Partition %d: %d records\n", partition, count.get()));
+        System.out.printf("\nDistribution Metrics:\nMean: %.2f\nStandard Deviation: %.2f\nCoefficient of Variation: %.2f\n",
+                mean, stdDev, cv);
+
+        // 打印key路由统计
+        System.out.println("\nKey Routing:");
+        keyPartitionMapping.forEach((key, partitions) ->
+            System.out.printf("Key %s -> Partitions: %s\n", key, partitions));
     }
 
     private class ShuffleWorker extends SetParallelism.StreamOperator<T>.Worker<T> {
@@ -68,6 +107,9 @@ public class ShuffleOperator<T> {
 
     @SuppressWarnings("unchecked")
     public void start() {
+        // 启动统计信息定期打印任务
+        statsExecutor.scheduleAtFixedRate(this::printStats, 10, 10, TimeUnit.SECONDS);
+
         // 启动生产者线程，从inputStream读取数据并发送到Kafka
         Thread producerThread = new Thread(() -> {
             while (running.get()) {
@@ -76,6 +118,7 @@ public class ShuffleOperator<T> {
                     if (data != null) {
                         String key = String.valueOf(data.hashCode() % operator.getParallelism());
                         producer.send(new ProducerRecord<>(inputTopic, key, data.toString()));
+                        updateStats(key, Math.abs(key.hashCode() % operator.getParallelism()));
                     }
                 } catch (InterruptedException e) {
                     Thread.currentThread().interrupt();
@@ -104,15 +147,46 @@ public class ShuffleOperator<T> {
     }
 
     public void stop() {
+        System.out.println("开始关闭ShuffleOperator...");
         running.set(false);
         try {
-            // 等待生产者发送完所有消息
+            // 打印最终统计信息
+            System.out.println("\n=== Final Shuffle Statistics ===");
+            printStats();
+
+            // 关闭统计执行器并等待其完成
+            System.out.println("正在关闭统计执行器...");
+            statsExecutor.shutdown();
+            if (!statsExecutor.awaitTermination(5, TimeUnit.SECONDS)) {
+                statsExecutor.shutdownNow();
+            }
+
+            // 先关闭生产者
+            System.out.println("正在关闭生产者...");
             producer.flush();
             producer.close(Duration.ofSeconds(5));
+
+            // 等待一段时间确保所有消息都被发送
+            Thread.sleep(1000);
+
             // 关闭消费者
-            consumer.close(Duration.ofSeconds(5));
+            System.out.println("正在关闭消费者...");
+            synchronized (consumer) {
+                consumer.wakeup(); // 唤醒可能阻塞的poll调用
+                consumer.close(Duration.ofSeconds(5));
+            }
+
+            // 等待确保所有资源都被正确关闭
+            Thread.sleep(1000);
+            System.out.println("ShuffleOperator已完全关闭。");
+            
+            // 强制退出程序
+            System.exit(0);
         } catch (Exception e) {
+            System.err.println("关闭ShuffleOperator时发生错误：");
             e.printStackTrace();
+            // 发生错误时强制退出
+            System.exit(1);
         }
     }
 

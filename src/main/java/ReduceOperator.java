@@ -1,5 +1,6 @@
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.function.BiFunction;
+import java.util.concurrent.TimeUnit;
 
 /**
  * 基于KeyedStream的Reduce算子
@@ -24,11 +25,11 @@ public class ReduceOperator<K, T> implements Runnable {
     @Override
     public void run() {
         try {
-            while (isRunning) {
+            while (isRunning || !inputStream.getKeyedStreams().isEmpty()) {
                 // 遍历所有key的stream
                 inputStream.getKeyedStreams().forEach((key, stream) -> {
                     try {
-                        T value = stream.poll();
+                        T value = stream.poll(100, TimeUnit.MILLISECONDS); // 添加超时以避免无限阻塞
                         if (value != null) {
                             T current = accumulator.getOrDefault(key, null);
                             T reduced = (current == null) ? value : reducer.apply(current, value);
@@ -42,6 +43,11 @@ public class ReduceOperator<K, T> implements Runnable {
                 });
             }
         } finally {
+            // 在停止前输出最终的累积结果
+            accumulator.forEach((key, value) -> {
+                System.out.println("[Reduce]Final value for key " + key + ": " + value);
+                outputStream.emit(value);
+            });
             accumulator.clear();
         }
     }

@@ -9,8 +9,8 @@ import java.util.Properties;
 public class KafkaConfig {
     public static Properties getConsumerConfig() {
         Properties props = new Properties();
-        // 修改为你的 Kafka 服务器地址
-        String IP_address = "192.168.233.129:9092";
+        // 修改为本地开发环境的Kafka服务器地址
+        String IP_address = "localhost:9092";
         props.put("bootstrap.servers", IP_address);
         props.put("group.id", "streaming-job");
         props.put("key.deserializer", StringDeserializer.class.getName());
@@ -21,8 +21,8 @@ public class KafkaConfig {
 
     public static Properties getProducerConfig() {
         Properties props = new Properties();
-        // 修改为你的 Kafka 服务器地址
-        String IP_address = "192.168.233.129:9092";
+        // 修改为本地开发环境的Kafka服务器地址
+        String IP_address = "localhost:9092";
         props.put("bootstrap.servers", IP_address);
         props.put("key.serializer", StringSerializer.class.getName());
         props.put("value.serializer", StringSerializer.class.getName());

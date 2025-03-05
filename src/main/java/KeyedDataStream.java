@@ -20,4 +20,11 @@ public class KeyedDataStream<K, V> {
     public void forEach(java.util.function.BiConsumer<K, DataStream<V>> action) {
         streams.forEach(action);
     }
+    public void clear() {
+        streams.clear();
+    }
+
+    public boolean isEmpty() {
+        return streams.isEmpty();
+    }
 }

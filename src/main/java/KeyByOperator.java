@@ -1,4 +1,5 @@
 import java.util.function.Function;
+import java.util.concurrent.TimeUnit;
 
 /**
  * 键值分组算子
@@ -23,13 +24,18 @@ public class KeyByOperator<T, K> implements Runnable {
     public void run() {
         try {
             while (isRunning) {
-                T record = inputStream.poll();
-                K key = keySelector.apply(record);
-                System.out.println("[KeyBy]Received record: " + record + ", key: " + key);
-                outputStreams.emit(key, record);
+                T record = inputStream.poll(100, TimeUnit.MILLISECONDS); // 添加超时以避免无限阻塞
+                if (record != null) {
+                    K key = keySelector.apply(record);
+                    System.out.println("[KeyBy]Received record: " + record + ", key: " + key);
+                    outputStreams.emit(key, record);
+                }
             }
         } catch (InterruptedException e) {
             Thread.currentThread().interrupt();
+        } finally {
+            // 清理资源
+            outputStreams.clear();
         }
     }
 
