@@ -39,7 +39,7 @@ public class TestKeyByReduce {
         // 创建KafkaSink，将结果写入Kafka
         KafkaSink kafkaSink = new KafkaSink(
             reduceStream,
-            "localhost:9092",
+                KafkaConfig.IP_PORT,
             "keyby-reduce-test-topic"
         );
 
@@ -69,6 +69,6 @@ public class TestKeyByReduce {
         reduceThread.join();
         sinkThread.join();
 
-        System.out.println("测试完成。");
+        System.out.println("测试完成");
     }
 }

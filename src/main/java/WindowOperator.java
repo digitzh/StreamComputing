@@ -33,8 +33,7 @@ public class WindowOperator implements Runnable {
                 // 尝试在当前窗口内等待数据
                 WordCountEvent event = inputStream.poll(timeout, TimeUnit.MILLISECONDS);
                 if (event != null) {
-                    // 将单词转换为小写（尽管在 MapOperator 里已经转换，但这里再保证一次）
-                    String word = event.word.toLowerCase();
+                    String word = event.word;
                     aggregator.put(word, aggregator.getOrDefault(word, 0) + event.count);
                 } else {
                     // 超时，说明当前窗口结束，输出聚合结果

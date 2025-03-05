@@ -42,7 +42,7 @@ public class TestShuffleDistribution {
         // 创建KafkaSink，将结果写入Kafka并收集统计信息
         KafkaSink kafkaSink = new KafkaSink(
             shuffledStream,
-            "localhost:9092",
+                KafkaConfig.IP_PORT,
             "shuffle-distribution-test-topic"
         ) {
             protected void processRecord(String record, int partition) {

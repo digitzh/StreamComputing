@@ -7,11 +7,12 @@ import java.util.Properties;
  * Kafka 客户端配置
  */
 public class KafkaConfig {
+    // 修改为本地开发环境的Kafka服务器地址和端口
+    public static String IP_PORT = "192.168.233.129:9092";
+
     public static Properties getConsumerConfig() {
         Properties props = new Properties();
-        // 修改为本地开发环境的Kafka服务器地址
-        String IP_address = "localhost:9092";
-        props.put("bootstrap.servers", IP_address);
+        props.put("bootstrap.servers", IP_PORT);
         props.put("group.id", "streaming-job");
         props.put("key.deserializer", StringDeserializer.class.getName());
         props.put("value.deserializer", StringDeserializer.class.getName());
@@ -21,9 +22,7 @@ public class KafkaConfig {
 
     public static Properties getProducerConfig() {
         Properties props = new Properties();
-        // 修改为本地开发环境的Kafka服务器地址
-        String IP_address = "localhost:9092";
-        props.put("bootstrap.servers", IP_address);
+        props.put("bootstrap.servers", IP_PORT);
         props.put("key.serializer", StringSerializer.class.getName());
         props.put("value.serializer", StringSerializer.class.getName());
         props.put("acks", "all");

@@ -1,11 +1,9 @@
 import DAG.Dag;
 import DAG.DagParser;
 
-
 public class StreamingJob2 {
     public static void main(String[] args) throws Exception {
         System.out.println("工作目录: " + System.getProperty("user.dir"));
-
 
         // 解析DAG配置
         Dag dag = DagParser.parse("src/main/resources/dag-config.yaml");
@@ -26,5 +24,5 @@ public class StreamingJob2 {
             // 停止执行
             scheduler.stop();
         }
-}
+    }
 }

@@ -61,7 +61,7 @@ public class ShuffleTest {
         // 创建Sink算子用于验证结果
         KafkaSink kafkaSink = new KafkaSink(
             shuffledStream,
-            "192.168.233.129:9092",
+                KafkaConfig.IP_PORT,
             "test-output-topic"
         );
 
