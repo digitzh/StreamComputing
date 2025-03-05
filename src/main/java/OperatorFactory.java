@@ -64,7 +64,7 @@ public class OperatorFactory {
                 );
 
             case SINK:
-                return new Sink(
+                return new FileSink(
                         (DataStream<String>) context.getInputStream(prevNodeId),
                         node.getConfig().get("path")
                 );

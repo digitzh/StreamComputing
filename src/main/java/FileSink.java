@@ -6,12 +6,12 @@ import java.io.IOException;
 /**
  * 将数据写入文件的 Sink 算子
  */
-public class Sink implements Runnable {
+public class FileSink implements Runnable {
     private final DataStream<String> dataStream;
     private final String outputPath;
     private volatile boolean isRunning = true;
 
-    public Sink(DataStream<String> dataStream, String outputPath) {
+    public FileSink(DataStream<String> dataStream, String outputPath) {
         this.dataStream = dataStream;
         this.outputPath = outputPath;
     }

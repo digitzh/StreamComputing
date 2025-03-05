@@ -59,8 +59,8 @@ public class StreamContext {
                 ((KeyByOperator<?, ?>) operator).stop();
             } else if (operator instanceof ReduceOperator) {
                 ((ReduceOperator<?, ?>) operator).stop();
-            } else if (operator instanceof Sink) {
-                ((Sink) operator).stop();
+            } else if (operator instanceof FileSink) {
+                ((FileSink) operator).stop();
             }
         });
 
