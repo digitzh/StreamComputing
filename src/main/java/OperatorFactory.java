@@ -1,8 +1,5 @@
 
-
 import DAG.DagNode;
-
-
 
 public class OperatorFactory {
     public static Runnable createOperator(DagNode node, StreamContext context, String prevNodeId) {

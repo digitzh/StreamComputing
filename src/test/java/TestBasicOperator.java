@@ -29,7 +29,7 @@ public class TestBasicOperator {
         KeyByOperator<WordCountEvent, String> keyByOperator = new KeyByOperator<>(
                 mappedStream,
                 event -> event.word,  // 按单词分组
-                2  // 并行度
+                1  // 基本测试，并行度暂时设为1（可以调整）
         );
 
         // Reduce算子累加计数

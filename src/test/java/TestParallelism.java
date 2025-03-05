@@ -1,12 +1,12 @@
 import java.util.concurrent.TimeUnit;
 
-public class TestKeyByReduce {
+public class TestParallelism {
     public static void main(String[] args) throws InterruptedException {
-        System.out.println("开始测试KeyBy和Reduce操作的正确性...");
+        System.out.println("开始KeyBy和Reduce算子并行度测试...");
 
         // 创建数据流
         DataStream<String> sourceStream = new DataStream<>();
-        KeyedDataStream<String, String> keyedStream = new KeyedDataStream<>();
+        DataStream<String> mappedStream = new DataStream<>();
         DataStream<String> reduceStream = new DataStream<>();
 
         // 创建数据生成器，模拟输入数据
@@ -19,7 +19,7 @@ public class TestKeyByReduce {
                     String action = actions[(int)(Math.random() * actions.length)];
                     return user + "," + action;
                 },
-                1000 // 每1秒生成一条数据
+                250 // 每250ms生成一条数据
         );
 
         // 创建KeyBy算子，使用用户ID作为key
@@ -31,6 +31,16 @@ public class TestKeyByReduce {
                 2 // 初始设置并行度为2
         );
 
+        // 2. Map算子：解析输入并转换
+        MapOperator<String, String> mapOperator = new MapOperator<>(
+                sourceStream,
+                mappedStream,
+                String::toUpperCase,
+                2
+        );
+        // 也可通过.setParallelism方法设置并行度
+        // mapOperator.setParallelism(3);
+
         // 创建Reduce算子，将同一用户的行为连接起来
         ReduceOperator<String, String> reduceOperator = new ReduceOperator<>(
                 keyByOperator.getKeyedStreams(),
@@ -41,7 +51,7 @@ public class TestKeyByReduce {
         // 创建KafkaSink，将结果写入Kafka
         KafkaSink kafkaSink = new KafkaSink(
                 reduceStream,
-                "localhost:9092",
+                KafkaConfig.IP_PORT,
                 "keyby-reduce-test-topic"
         );
 
@@ -80,6 +90,6 @@ public class TestKeyByReduce {
         reduceThread.join();
         sinkThread.join();
 
-        System.out.println("测试完成。");
+        System.out.println("测试完成");
     }
 }

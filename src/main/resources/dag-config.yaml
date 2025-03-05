@@ -12,17 +12,17 @@ job:
     - id: map
       type: map
       function: "toLowerCase"
-      parallelism: 1
+      parallelism: 2
       next: keyby
     - id: keyby
       type: keyby
       key-selector: "word"
-      parallelism: 1
+      parallelism: 2
       next: reduce
     - id: reduce
       type: reduce
       function: "sum"
-      parallelism: 1
+      parallelism: 2
       next: sink
   sinks:
     - id: sink
