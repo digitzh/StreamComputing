@@ -52,7 +52,7 @@ public class TestParallelism {
         KafkaSink kafkaSink = new KafkaSink(
                 reduceStream,
                 KafkaConfig.IP_PORT,
-                "keyby-reduce-test-topic"
+                "output-topic"
         );
 
         // 启动所有线程

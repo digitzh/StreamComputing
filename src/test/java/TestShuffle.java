@@ -62,7 +62,7 @@ public class TestShuffle {
         KafkaSink kafkaSink = new KafkaSink(
             shuffledStream,
                 KafkaConfig.IP_PORT,
-            "test-output-topic"
+            "output-topic"
         );
 
         // 启动所有组件
