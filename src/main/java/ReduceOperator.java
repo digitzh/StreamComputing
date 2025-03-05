@@ -15,8 +15,8 @@ public class ReduceOperator<K, T> implements Runnable {
     private volatile boolean isRunning = true;
 
     public ReduceOperator(KeyedDataStream<K, T> inputStream,
-                         DataStream<T> outputStream,
-                         BiFunction<T, T, T> reducer) {
+                          DataStream<T> outputStream,
+                          BiFunction<T, T, T> reducer) {
         this.inputStream = inputStream;
         this.outputStream = outputStream;
         this.reducer = reducer;
@@ -31,6 +31,12 @@ public class ReduceOperator<K, T> implements Runnable {
                     try {
                         T value = stream.poll(100, TimeUnit.MILLISECONDS); // 添加超时以避免无限阻塞
                         if (value != null) {
+                            // 验证相同key的数据是否来自同一个工作线程
+                            String valueStr = value.toString();
+                            if (valueStr.contains("Worker")) {
+                                String workerId = valueStr.substring(valueStr.indexOf("Worker") + 6, valueStr.indexOf("]"));
+                                System.out.println(String.format("[Reduce-Verification] Key %s received data from Worker-%s", key, workerId));
+                            }
                             T current = accumulator.getOrDefault(key, null);
                             T reduced = (current == null) ? value : reducer.apply(current, value);
                             accumulator.put(key, reduced);
