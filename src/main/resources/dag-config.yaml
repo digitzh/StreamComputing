@@ -5,7 +5,7 @@ job:
     - id: source
       type: kafka
       topic: word-input
-      bootstrap-servers: "192.168.233.129:9092"
+      bootstrap-servers: KafkaConfig.IP_PORT
       parallelism: 1
       next: map
   operators:

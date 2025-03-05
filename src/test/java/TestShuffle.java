@@ -1,6 +1,6 @@
 import java.util.concurrent.TimeUnit;
 
-public class ShuffleTest {
+public class TestShuffle {
     public static void main(String[] args) throws InterruptedException {
         // 创建数据流
         SetParallelism setParallelism = new SetParallelism();

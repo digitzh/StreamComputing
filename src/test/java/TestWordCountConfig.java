@@ -1,7 +1,7 @@
 import DAG.Dag;
 import DAG.DagParser;
 
-public class StreamingJob2 {
+public class TestWordCountConfig {
     public static void main(String[] args) throws Exception {
         System.out.println("工作目录: " + System.getProperty("user.dir"));
 
@@ -19,7 +19,7 @@ public class StreamingJob2 {
             scheduler.start();
 
             // 运行一段时间后停止
-            Thread.sleep(60_000);
+            Thread.sleep(30_000);
         } finally {
             // 停止执行
             scheduler.stop();

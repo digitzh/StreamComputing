@@ -1,4 +1,4 @@
-public class StreamingJob {
+public class TestWordCount {
     public static void main(String[] args) throws InterruptedException {
         System.out.println("工作目录: " + System.getProperty("user.dir"));
         // 原始数据流（String），来自 Kafka 或 DataGenerator
@@ -9,7 +9,7 @@ public class StreamingJob {
         // 窗口聚合结果流（String 格式：window_trigger_time,word,total_count）
         DataStream<String> windowedStream = new DataStream<>();
 
-        // 1. source算子（从Kafka读取或使用 DataGenerator 模拟输入）
+        // 1. Source算子（从Kafka读取或使用 DataGenerator 模拟输入）
         Source source = new Source(sourceStream, "input-topic");
 
         // 2. Map算子：解析输入并转换为 WordCountEvent
@@ -35,7 +35,7 @@ public class StreamingJob {
         // 4. Sink算子：将聚合结果写入Kafka
         KafkaSink kafkaSink = new KafkaSink(
                 windowedStream,
-                "192.168.233.129:9092",  // Kafka broker地址
+                KafkaConfig.IP_PORT,  // Kafka broker地址
                 "output-topic"     // 目标topic
         );
 
@@ -72,7 +72,7 @@ public class StreamingJob {
         generatorThread.start();
 
         // 运行一段时间后停止
-        Thread.sleep(60_000); // 运行 60 秒后停止
+        Thread.sleep(30_000); // 运行 30 秒后停止
         source.stop();
         parseOperator.stop();
         windowOperator.stop();
