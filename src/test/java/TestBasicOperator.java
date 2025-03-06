@@ -41,7 +41,8 @@ public class TestBasicOperator {
                         current.word,
                         current.count + newEvent.count,
                         System.currentTimeMillis()
-                )
+                ),
+                1
         );
 
         // 3. Reduce后的序列化Map

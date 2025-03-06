@@ -60,7 +60,8 @@ public class OperatorFactory {
                                 return acc + "|" + curr;
                             }
                             return curr;
-                        }
+                        },
+                        1
                 );
 
             case SINK:

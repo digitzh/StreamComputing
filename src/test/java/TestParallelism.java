@@ -45,7 +45,8 @@ public class TestParallelism {
         ReduceOperator<String, String> reduceOperator = new ReduceOperator<>(
                 keyByOperator.getKeyedStreams(),
                 reduceStream,
-                (acc, curr) -> acc + "|" + curr
+                (acc, curr) -> acc + "|" + curr,
+                2
         );
 
         // 创建KafkaSink，将结果写入Kafka

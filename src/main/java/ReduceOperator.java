@@ -7,44 +7,61 @@ import java.util.concurrent.TimeUnit;
  * @param <K> Key类型
  * @param <T> 数据类型
  */
-public class ReduceOperator<K, T> implements Runnable {
+public class ReduceOperator<K, T> extends StreamOperator {
     private final KeyedDataStream<K, T> inputStream;
     private final DataStream<T> outputStream;
     private final BiFunction<T, T, T> reducer;
     private final ConcurrentHashMap<K, T> accumulator = new ConcurrentHashMap<>();
-    private volatile boolean isRunning = true;
 
     public ReduceOperator(KeyedDataStream<K, T> inputStream,
                           DataStream<T> outputStream,
-                          BiFunction<T, T, T> reducer) {
+                          BiFunction<T, T, T> reducer,
+                          int parallelism) { // 添加并行度参数
+        super(parallelism); // 调用父类构造器
         this.inputStream = inputStream;
         this.outputStream = outputStream;
         this.reducer = reducer;
     }
 
     @Override
+    protected void rebalanceWorkers() {
+        // 清空累积器
+        accumulator.clear();
+    }
+
+    @Override
     public void run() {
+        // 启动并行工作线程（使用父类的executorService）
+        for (int i = 0; i < parallelism; i++) {
+            final int workerId = i;
+            executorService.submit(() -> processRecords(workerId));
+        }
+    }
+
+    private void processRecords(int workerId) {
         try {
             while (isRunning || !inputStream.getKeyedStreams().isEmpty()) {
-                // 遍历所有key的stream
                 inputStream.getKeyedStreams().forEach((key, stream) -> {
-                    try {
-                        T value = stream.poll(100, TimeUnit.MILLISECONDS); // 添加超时以避免无限阻塞
-                        if (value != null) {
-                            // 验证相同key的数据是否来自同一个工作线程
-                            String valueStr = value.toString();
-                            if (valueStr.contains("Worker")) {
-                                String workerId = valueStr.substring(valueStr.indexOf("Worker") + 6, valueStr.indexOf("]"));
-                                System.out.println(String.format("[Reduce-Verification] Key %s received data from Worker-%s", key, workerId));
+                    // 根据key的hash分配工作线程
+                    if (Math.abs(key.hashCode() % parallelism) == workerId) {
+                        try {
+                            T value = stream.poll(100, TimeUnit.MILLISECONDS);
+                            if (value != null) {
+                                // 验证相同key的数据是否来自同一个工作线程
+                                String valueStr = value.toString();
+                                if (valueStr.contains("Worker")) {
+                                    String workerIdStr = valueStr.substring(valueStr.indexOf("Worker") + 6, valueStr.indexOf("]"));
+                                    System.out.println(String.format("[Reduce-Verification] Key %s received data from Worker-%s", key, workerIdStr));
+                                }
+                                T current = accumulator.getOrDefault(key, null);
+                                T reduced = (current == null) ? value : reducer.apply(current, value);
+                                accumulator.put(key, reduced);
+                                System.out.println("[Reduce]Reduced value for key " + key + ": " + reduced);
+                                outputStream.emit(reduced);
                             }
-                            T current = accumulator.getOrDefault(key, null);
-                            T reduced = (current == null) ? value : reducer.apply(current, value);
-                            accumulator.put(key, reduced);
-                            System.out.println("[Reduce]Reduced value for key " + key + ": " + reduced);
-                            outputStream.emit(reduced);
+                        } catch (InterruptedException e) {
+                            Thread.currentThread().interrupt();
                         }
-                    } catch (InterruptedException e) {
-                        Thread.currentThread().interrupt();
                     }
                 });
             }
@@ -56,9 +73,5 @@ public class ReduceOperator<K, T> implements Runnable {
             });
             accumulator.clear();
         }
-    }
-
-    public void stop() {
-        isRunning = false;
     }
 }
