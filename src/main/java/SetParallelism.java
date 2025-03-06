@@ -139,15 +139,4 @@ public class SetParallelism {
             return new DataStream<>(nextOperator);
         }
     }
-
-    public static class JobExample {
-        public static void main(String[] args) {
-            // 示例代码，需要实现具体的算子类
-            // StreamOperator<String> source = new KafkaSourceOperator<>("input-topic", new StringDeserialization());
-            // StreamOperator<String> map = new MapOperator<>(String::toUpperCase);
-            // StreamOperator<String> keyBy = new KeyByOperator<>(s -> s.split(":")[0]);
-            // StreamOperator<String> reduce = new ReduceOperator<>((a, b) -> a + "," + b);
-            // StreamOperator<Void> sink = new FileSinkOperator<>("/output", new TextFileWriterFactory());
-        }
-    }
 }

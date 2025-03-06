@@ -8,7 +8,7 @@ public enum NodeType {
     SOURCE("source"),
     MAP("map"),
     KEYBY("keyby"),
-    REDUCE("reduce"),// 数据源节点
+    REDUCE("reduce"),    // 数据源节点
     SINK("sink");        // 数据接收器节点
     
     private final String value;
